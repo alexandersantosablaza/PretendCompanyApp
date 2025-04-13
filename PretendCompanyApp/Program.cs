@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using TCPData;
@@ -6,9 +7,11 @@ using TCPExtensions;
 namespace PretendCompanyApp;
 public static class Program
 {
+    private const string spacer = "-------------------------------------------------";
+
     public static void Main(string[] args)
     {
-        RunExample3();
+        RunExample5();
     }
     private static void RunExample1()
     {
@@ -16,7 +19,7 @@ public static class Program
         var filteredEmployees = employees.Filter(e => e.IsManager == true);
         filteredEmployees.ForEach(e => Console.WriteLine(e.ToString()));
 
-        Console.WriteLine("-------------------------------------------------");
+        Console.WriteLine(spacer);
 
         string[] DepartmentShortNames = ["HR", "IT"];
         List<Department> departments = Data.GetDepartments();
@@ -25,7 +28,7 @@ public static class Program
         filteredDepartments.ForEach(d => Console.WriteLine(d.ToString()));
 
 
-        Console.WriteLine("-------------------------------------------------");
+        Console.WriteLine(spacer);
         // query syntax
         var linq = from emp in employees
                    join dept in departments on emp.DepartmentId equals dept.Id
@@ -65,7 +68,7 @@ public static class Program
             e.AnnualSalary,
         });
         result.ToList().ForEach(e => Console.WriteLine($"Name: {e.FullName}, Position: {e.Position}, Salary: {e.AnnualSalary,2}"));
-        Console.WriteLine("-------------------------------------------------");
+        Console.WriteLine(spacer);
 
         // query syntax
         var query =
@@ -95,6 +98,91 @@ public static class Program
         employees2.Add(new Employee() { FirstName = "Jane", LastName = "Smith", AnnualSalary = 70_000m, Position = "Manager", IsManager = true, DepartmentId = 2 });
         highSalaryEmployees2.ForEach(e => Console.WriteLine($"Name: {e.FullName}, Salary: {e.AnnualSalary}"));
         // john doe is not added here
+    }
+    private static void RunExample4()
+    {
+        List<Employee> employees = Data.GetEmployees();
+        List<Department> departments = Data.GetDepartments();
+        // using query syntax
+        var query =
+        from employee in employees
+        join department in departments on employee.DepartmentId equals department.Id
+        where employee.AnnualSalary >= 50_000m
+        select new { FullName = $"{employee.FirstName} {employee.LastName}", employee.AnnualSalary, Department = department.LongName };
+
+        query.ToList().ForEach(e => Console.WriteLine($"Name: {e.FullName}, Salary: {e.AnnualSalary}, Department: {e.Department}"));
+
+        Console.WriteLine(spacer);
+
+        // using fluent syntax
+        var result = employees.Where(e => e.AnnualSalary >= 50_000m)
+        .Join(departments,
+            emp => emp.DepartmentId,
+            dept => dept.Id,
+            (emp, dept) => new { FullName = $"{emp.FirstName} {emp.LastName}", emp.AnnualSalary, Department = dept.LongName });
+        result.ToList().ForEach(e => Console.WriteLine($"Name: {e.FullName}, Salary: {e.AnnualSalary}, Department: {e.Department}"));
+    }
+    private static void RunExample5()
+    {
+        List<Employee> employees = Data.GetEmployees();
+        List<Department> departments = Data.GetDepartments();
+
+        var result = departments.GroupJoin(employees,
+                dept => dept.Id,
+                emp => emp.DepartmentId,
+                (dept, employeesGroup) => new { Employees = employeesGroup ?? Enumerable.Empty<Employee>(), DepartmentName = dept.LongName });
+        result.ToList().ForEach(e =>
+        {
+            Console.WriteLine($"Department: {e.DepartmentName}");
+            if (!e.Employees.Any())
+            {
+                Console.WriteLine($"{"",5}No employees in this department.");
+            }
+            else
+            {
+                e.Employees.ToList().ForEach(emp => Console.WriteLine($"{"",5}Employee: {emp.FirstName} {emp.LastName}, Salary: {emp.AnnualSalary}"));
+            }
+        });
+
+        Console.WriteLine(spacer);
+
+        var qrs =
+        from employee in employees
+        join department in departments on employee.DepartmentId equals department.Id into departmentGroup
+        select new { Department = departmentGroup, Employee = employee };
+        qrs.ToList().ForEach(e =>
+        {
+            Console.WriteLine($"Employee: {e.Employee.FirstName} {e.Employee.LastName}, Salary: {e.Employee.AnnualSalary}");
+            if (!e.Department.Any())
+            {
+                Console.WriteLine($"{"",5}No department for this employee.");
+            }
+            else
+            {
+                e.Department.ToList().ForEach(dept => Console.WriteLine($"{"",5}Department: {dept.LongName}"));
+            }
+        });
+
+        Console.WriteLine(spacer);
+
+        var query =
+        from department in departments
+        join employee in employees on department.Id equals employee.DepartmentId into employeeGroup
+        //  where employeeGroup.Any(empl => empl.AnnualSalary >= 50_000m)
+        select new { Employee = employeeGroup, Department = department.LongName };
+        query.ToList().ForEach(q =>
+        {
+            Console.WriteLine($"Department: {q.Department}");
+            if (!q.Employee.Any())
+            {
+                Console.WriteLine($"{"",5}No employees in this department.");
+            }
+            else
+            {
+                q.Employee.ToList().ForEach(emp => Console.WriteLine($"{"",5}Employee: {emp.FirstName} {emp.LastName}, Salary: {emp.AnnualSalary}"));
+            }
+        });
+
     }
 }
 
