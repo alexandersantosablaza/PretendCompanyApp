@@ -11,7 +11,7 @@ public static class Program
 
     public static void Main(string[] args)
     {
-        RunExample5();
+        RunExample6();
     }
     private static void RunExample1()
     {
@@ -180,6 +180,45 @@ public static class Program
             else
             {
                 q.Employee.ToList().ForEach(emp => Console.WriteLine($"{"",5}Employee: {emp.FirstName} {emp.LastName}, Salary: {emp.AnnualSalary}"));
+            }
+        });
+
+    }
+    private static void RunExample6()
+    {
+        List<Employee> employees = Data.GetEmployees();
+        List<Department> departments = Data.GetDepartments();
+        var result = departments.GroupJoin(employees,
+            dept => dept.Id,
+            emp => emp.DepartmentId,
+            (dept, employeeGrp) => new { Employees = employeeGrp ?? Enumerable.Empty<Employee>(), DepartmentName = dept.LongName });
+        result.ToList().ForEach(e =>
+        {
+            Console.WriteLine($"Department: {e.DepartmentName}");
+            if (!e.Employees.Any())
+            {
+                Console.WriteLine($"{"",5}No employees in this department.");
+            }
+            else
+            {
+                e.Employees.ToList().ForEach(emp => Console.WriteLine($"{"",5}Employee: {emp.FirstName} {emp.LastName}, Salary: {emp.AnnualSalary}"));
+            }
+        });
+        Console.WriteLine(spacer);
+
+        var qrs = from d in departments
+                  join e in employees on d.Id equals e.DepartmentId into employeeGroup
+                  select new { DepartmentName = d.LongName, Employee = employeeGroup };
+        qrs.ToList().ForEach(e =>
+        {
+            Console.WriteLine($"Department: {e.DepartmentName}");
+            if (!e.Employee.Any())
+            {
+                Console.WriteLine($"{"",5}No employees in this department.");
+            }
+            else
+            {
+                e.Employee.ToList().ForEach(emp => Console.WriteLine($"{"",5}Employee: {emp.FirstName} {emp.LastName}, Salary: {emp.AnnualSalary}"));
             }
         });
 

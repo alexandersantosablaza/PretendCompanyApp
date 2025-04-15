@@ -165,3 +165,4 @@ healthchecksdb
 
 # LibreOffice locks
 .~lock.*#
+.fake
